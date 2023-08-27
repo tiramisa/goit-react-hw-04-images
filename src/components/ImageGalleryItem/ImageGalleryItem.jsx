@@ -51,6 +51,7 @@ ImageGalleryItem.propTypes = {
   item: PropTypes.shape({
     id: PropTypes.number.isRequired,
     previewURL: PropTypes.string.isRequired,
+
     tags: PropTypes.string.isRequired,
   }).isRequired,
 };

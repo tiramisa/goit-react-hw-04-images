@@ -1,84 +1,68 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Loader from './Loader/Loader';
 import Button from './Button/Button';
 import SearchBar from './SearchBar/SearchBar';
 import '../css/styles.module.css';
 import fetchPhotos from './api';
+import { animateScroll as scroll } from 'react-scroll';
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    page: 1,
-    isLoading: false,
-    hasMoreImages: false,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMoreImages, setHasMoreImages] = useState(false);
 
-  componentDidUpdate = async (prevProps, prevState) => {
-    const prevQuery = prevState.query;
-    const nextQuery = this.state.query;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-
-    if (prevQuery !== nextQuery || prevPage !== nextPage) {
-      fetchPhotos(nextQuery, nextPage)
-        .then(response => response.json())
-        .then(data => {
-          let images = [...this.state.images, ...data.hits];
-          let hasMoreImages = nextPage < Math.ceil((images.length + 1) / 12);
-          console.log(hasMoreImages);
-          this.setState(prevState => ({
-            images: images,
-            isLoading: false,
-            hasMoreImages: hasMoreImages,
-          }));
-        })
-        .catch(error => {
-          console.error('Error loading images:', error);
-          this.setState({ isLoading: false });
-        });
+  useEffect(() => {
+    if (query === '') {
+      return;
     }
+
+    setIsLoading(true);
+
+    fetchPhotos(query, page)
+      .then(response => response.json())
+      .then(data => {
+        let newImages = [...images, ...data.hits];
+        let newHasMoreImages = page < Math.ceil((newImages.length + 1) / 12);
+
+        setImages(newImages);
+        setHasMoreImages(newHasMoreImages);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Error loading images:', error);
+        setIsLoading(false);
+      });
+  }, [query, page]);
+
+  const handleLoadMoreClick = () => {
+    setPage(prevPage => prevPage + 1);
+    scroll.scrollToBottom();
   };
 
-  handleImageClick = imageData => {
-    console.log(imageData);
-    this.setState({ modalData: imageData });
-  };
-
-  handleLoadMoreClick = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  handleSearchSubmit = evt => {
+  const handleSearchSubmit = evt => {
     evt.preventDefault();
-    let q = evt.target.elements.query.value.trim();
-    console.log(q);
-    this.setState(prevState => ({
-      query: q,
-      images: [],
-      page: 1,
-      isLoading: false,
-    }));
+    const q = evt.target.elements.query.value.trim();
+    setQuery(q);
+    setImages([]);
+    setPage(1);
+    setIsLoading(false);
   };
+  const handleImageClick = imageData => {};
 
-  render() {
-    const { images, isLoading, hasMoreImages } = this.state;
-    return (
-      <div className="root">
-        <SearchBar onSubmit={this.handleSearchSubmit} />
-        {isLoading ? (
-          <Loader />
-        ) : (
-          <ImageGallery images={images} onClickImage={this.handleImageClick} />
-        )}
-        <Button
-          onClick={this.handleLoadMoreClick}
-          hasMoreImages={hasMoreImages}
-        />
-      </div>
-    );
-  }
-}
+  return (
+    <div className="root">
+      <SearchBar onSubmit={handleSearchSubmit} />
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <ImageGallery images={images} onClickImage={handleImageClick} />
+          <Button onClick={handleLoadMoreClick} hasMoreImages={hasMoreImages} />
+        </>
+      )}
+    </div>
+  );
+};
