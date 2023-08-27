@@ -24,11 +24,8 @@ export const App = () => {
     fetchPhotos(query, page)
       .then(response => response.json())
       .then(data => {
-        let newImages = [...images, ...data.hits];
-        let newHasMoreImages = page < Math.ceil((newImages.length + 1) / 12);
-
-        setImages(newImages);
-        setHasMoreImages(newHasMoreImages);
+        setImages(prevImages => [...prevImages, ...data.hits]);
+        setHasMoreImages(data.hits.length > 0);
         setIsLoading(false);
       })
       .catch(error => {
